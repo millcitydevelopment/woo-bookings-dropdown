@@ -1,9 +1,9 @@
 <?php
 /*
-Plugin Name: Woocommerce Bookings Dropdown
+Plugin Name: Woocommerce Bookings Dropdown - Forked
 Description: Swaps the date picker for a dropdown of dates
-Version: 1.1.0
-Author: Webby Scots
+Version: 1.1.1
+Author: Webby Scots (Modified by Nick Green)
 Author URI: http://webbyscots.com/
 License: GNU General Public License v3.0
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -37,9 +37,12 @@ function wswp_refresh_dates() {
     $field = $picker->get_args();
     $rules = $product->get_availability_rules($_REQUEST['resource_id']);
     $max = $product->get_max_date();
+    $duration['unit'] = $product->get_duration_unit();
+    $duration['type'] = $product->get_duration_type();
+    $duration['length'] = $product->get_duration();
     $now = strtotime( 'midnight', current_time( 'timestamp' ) );
     $max_date = strtotime( "+{$max['value']} {$max['unit']}", $now );
-    $dates = wswp_build_options($rules, $field, $max_date);
+    $dates = wswp_build_options($rules, $field, $max_date, $duration);
     if (!empty($dates)) {
         $response = array(
             'success' => true,
@@ -68,12 +71,18 @@ function wswp_booking_form_fields($fields) {
     $i = 0;
     $selected_resource = 0;
     $reset_options = false;
+
+    $product = wc_get_product(get_the_ID());
+    $duration['unit'] = $product->get_duration_unit();
+    $duration['type'] = $product->get_duration_type();
+    $duration['length'] = $product->get_duration();
+
     foreach($fields as $field) {
         $new_fields[$i] = $field;
         if ($field['type'] == "select") {
             $selected_resource = reset(array_keys($field['options']));
             if ($reset_options !== false) {
-                $new_fields[$reset_options]['options'] = wswp_build_options($field['availability_rules'][$selected_resource], $field);
+                $new_fields[$reset_options]['options'] = wswp_build_options($field['availability_rules'][$selected_resource], $field,$duration);
             }
         }
         if ($field['type'] == "date-picker" && $wswp_dates_built === false)
@@ -81,7 +90,7 @@ function wswp_booking_form_fields($fields) {
             $max = $field['max_date'];
             $now = strtotime( 'midnight', current_time( 'timestamp' ) );
             $max_date = strtotime( "+{$max['value']} {$max['unit']}", $now );
-            $avail_dates = wswp_build_options($field['availability_rules'][$selected_resource], $field, $max_date);
+            $avail_dates = wswp_build_options($field['availability_rules'][$selected_resource], $field, $max_date,$duration);
             if (!$avail_dates)
                 return $fields;
             $s = $i;
@@ -101,14 +110,16 @@ function wswp_booking_form_fields($fields) {
     return $new_fields;
 }
 
-function wswp_build_options($rules, $field, $max_date) {
+function wswp_build_options($rules, $field, $max_date, $duration = NULL) {
     global $wswp_dates_built;
     $dates = array();
     $non_date_ranges = false;
+    $years = array();
+    $legacy = true;
     foreach($rules as $dateset) {
         if (isset($dateset[0]) && $dateset[0] == "custom") {
-             $years = array_keys($dateset[1]);
-             $legacy = true;
+            $years = array_keys($dateset[1]);
+            $legacy = true;
         }
         else if ($dateset['type'] == "custom") {
             $years = array_keys($dateset['range']);
@@ -131,7 +142,19 @@ function wswp_build_options($rules, $field, $max_date) {
                     if (isset($field['fully_booked_days'][$js_date]))
                         continue;
                     if ($dtime <= $max_date-1) {
-                        $dates[$dtime] = date_i18n("F jS, Y", $dtime);
+                        $flag_single_day_event = false;
+                        if($duration['unit'] == 'day' && $duration['length'] == 1) {
+                            $flag_single_day_event = true;
+                        }
+                        if($duration['type'] == 'fixed' && !$flag_single_day_event) {
+                            $first_date = date_i18n("F jS, Y", $dtime);
+                            $second_date = date_i18n("F jS, Y", strtotime($first_date. ' + '.($duration['length'] - 1).' '.$duration['unit']));
+                            $dates[$dtime] = $first_date.' - '.$second_date;
+                        } else {
+                            $dates[$dtime] = date_i18n("F jS, Y", $dtime);
+                        }
+
+
                     }
                 }
             }
@@ -155,20 +178,20 @@ function wswp_css_js() {
         .picker-hidden .picker, .picker-hidden legend {
             display:none;
         }
-        </style>
-        <script type='text/javascript'>
-            jQuery(function($) {
-                $(".picker-chooser").insertBefore('.wc-bookings-date-picker-date-fields');
-                $("select#wc_bookings_field_start_date").on('change', function() {
-				var selectedDate = $(this).val()
-				var selectedDateBreakdown = selectedDate.split("-");
+    </style>
+    <script type='text/javascript'>
+        jQuery(function($) {
+            $(".picker-chooser").insertBefore('.wc-bookings-date-picker-date-fields');
+            $("select#wc_bookings_field_start_date").on('change', function() {
+                var selectedDate = $(this).val()
+                var selectedDateBreakdown = selectedDate.split("-");
 
-				$( "input[name*='wc_bookings_field_start_date_year']" ).val( selectedDateBreakdown[0] );
-				$( "input[name*='wc_bookings_field_start_date_month']" ).val( selectedDateBreakdown[1] );
-				$( "input[name*='wc_bookings_field_start_date_day']" ).val( selectedDateBreakdown[2] );
-			});
+                $( "input[name*='wc_bookings_field_start_date_year']" ).val( selectedDateBreakdown[0] );
+                $( "input[name*='wc_bookings_field_start_date_month']" ).val( selectedDateBreakdown[1] );
+                $( "input[name*='wc_bookings_field_start_date_day']" ).val( selectedDateBreakdown[2] );
             });
+        });
 
-            </script>
-            <?php
+    </script>
+    <?php
 }
