@@ -151,7 +151,7 @@ function wswp_build_options($rules, $field, $max_date, $duration = NULL) {
                             $second_date = date_i18n("l F jS, Y", strtotime($first_date. ' + '.($duration['length'] - 1).' '.$duration['unit']));
                             $dates[$dtime] = $first_date.' - '.$second_date;
                         } else {
-                            $dates[$dtime] = date_i18n("F jS, Y", $dtime);
+                            $dates[$dtime] = date_i18n("l, F jS, Y", $dtime);
                         }
 
 
