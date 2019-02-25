@@ -154,7 +154,6 @@ function wswp_build_options($rules, $field, $max_date, $duration = NULL) {
                             $dates[$dtime] = date_i18n("l, F jS, Y", $dtime);
                         }
 
-
                     }
                 }
             }
