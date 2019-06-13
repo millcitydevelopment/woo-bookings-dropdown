@@ -147,11 +147,11 @@ function wswp_build_options($rules, $field, $max_date, $duration = NULL) {
                             $flag_single_day_event = true;
                         }
                         if($duration['type'] == 'fixed' && !$flag_single_day_event) {
-                            $first_date = date_i18n("l F jS, Y", $dtime);
-                            $second_date = date_i18n("l F jS, Y", strtotime($first_date. ' + '.($duration['length'] - 1).' '.$duration['unit']));
+                            $first_date = date_i18n("F jS", $dtime);
+                            $second_date = date_i18n("F jS", strtotime($first_date. ' + '.($duration['length'] - 1).' '.$duration['unit']));
                             $dates[$dtime] = $first_date.' - '.$second_date;
                         } else {
-                            $dates[$dtime] = date_i18n("l, F jS, Y", $dtime);
+                            $dates[$dtime] = date_i18n("F jS", $dtime);
                         }
 
                     }
