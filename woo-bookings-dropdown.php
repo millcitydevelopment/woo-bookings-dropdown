@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: Woocommerce Bookings Dropdown - Forked
+Plugin Name: Woocommerce Bookings Dropdown - Forked/Locked
 Description: Swaps the date picker for a dropdown of dates
 Version: 1.1.1
 Author: Webby Scots (Modified by Nick Green)
@@ -194,3 +194,15 @@ function wswp_css_js() {
     </script>
     <?php
 }
+
+
+// Remove update notification for forked plugin
+function woo_bookings_dropdown_filter_plugin_updates($value) {
+
+    if ( isset( $value ) && is_object( $value ) ) {
+        unset( $value->response[ plugin_basename(__FILE__) ] );
+    }
+
+    return $value;
+}
+add_filter( 'site_transient_update_plugins', 'woo_bookings_dropdown_filter_plugin_updates' );
